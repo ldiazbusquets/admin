@@ -1,0 +1,61 @@
+{
+  "note": "Names and dates only. Never put a key's value here: this repo is public. 'expires' is YYYY-MM-DD or null when unknown.",
+  "keys": [
+    {
+      "name": "CANVAS_TOKEN",
+      "what": "Canvas access token",
+      "repo": "dashboard",
+      "workflow": "Update dashboard",
+      "expires": null
+    },
+    {
+      "name": "ALPACA_KEY_ID / ALPACA_SECRET_KEY",
+      "what": "Alpaca paper-trading keys",
+      "repo": "dashboard",
+      "workflow": "Update dashboard",
+      "expires": null
+    },
+    {
+      "name": "FINNHUB_KEY",
+      "what": "Finnhub API key",
+      "repo": "dashboard",
+      "workflow": "Update dashboard",
+      "expires": null
+    },
+    {
+      "name": "FINNHUB_API_KEY",
+      "what": "Finnhub API key",
+      "repo": "parallax",
+      "workflow": "Deploy site",
+      "expires": null
+    },
+    {
+      "name": "FRED_API_KEY",
+      "what": "FRED API key",
+      "repo": "parallax",
+      "workflow": "Deploy site",
+      "expires": null
+    },
+    {
+      "name": "GROQ_API_KEY",
+      "what": "Groq API key (AI brief)",
+      "repo": "parallax",
+      "workflow": "Deploy site",
+      "expires": null
+    },
+    {
+      "name": "SEC_USER_AGENT",
+      "what": "SEC contact header",
+      "repo": "parallax",
+      "workflow": "Deploy site",
+      "expires": null
+    },
+    {
+      "name": "FRED_API_KEY",
+      "what": "FRED API key",
+      "repo": "finance",
+      "workflow": "Update data",
+      "expires": null
+    }
+  ]
+}

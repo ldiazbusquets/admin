@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>LDB Admin</title>
+<link rel="icon" href="https://ldiazbusquets.github.io/favicon.png?v=3">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@125,800&family=Urbanist:wght@300..600&family=Manrope:wght@400..700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #050506; --card: linear-gradient(180deg, rgba(255,255,255,.055), rgba(255,255,255,.02)); --raised: rgba(255,255,255,.04); --line: rgba(214,226,236,.12);
+  --ink: #EEF2F5; --soft: #9DA8B1; --faint: #5f6870; --accent: #7CA9D4; --up: #5fd07a; --down: #ff5f57; --run: #7CA9D4;
+  --sans: "Urbanist", "Helvetica Neue", Arial, sans-serif; --num: "Manrope", "Helvetica Neue", Arial, sans-serif; --display: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) {
+  --bg: #f4f5f6; --card: linear-gradient(180deg, #ffffff, #fafbfc); --raised: rgba(20,30,40,.04); --line: rgba(20,30,40,.1); --ink: #12161a; --soft: #5b6570; --faint: #98a1aa;
+  --accent: #3f74a6; --up: #2f9e4f; --down: #d93a33; --run: #3f74a6; color-scheme: light; } }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 400 15px/1.5 var(--sans); -webkit-font-smoothing: antialiased; }
+body::before { content: ""; position: fixed; inset: 0 0 auto 0; height: 420px; pointer-events: none; background: radial-gradient(60% 100% at 50% 0%, rgba(160,180,196,.13), rgba(160,180,196,0) 75%); }
+main { position: relative; max-width: 1080px; margin: 0 auto; padding: 28px 16px 64px; }
+a { color: inherit; }
+.top { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 40px; }
+.mark { font: 800 20px var(--display); letter-spacing: .02em; text-decoration: none; }
+.top nav { display: flex; gap: 8px; }
+.top nav a { color: var(--soft); text-decoration: none; font-size: 14px; padding: 7px 14px; border: 1px solid var(--line); border-radius: 999px; }
+.top nav a:hover { color: var(--ink); }
+h1 { font: 800 clamp(34px, 7vw, 56px)/1 var(--display); margin: 0 0 8px; }
+.sub { color: var(--soft); margin: 0 0 24px; font-size: 14px; }
+.tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.tile { background: var(--card); border: 1px solid var(--line); border-radius: 20px; padding: 16px 18px; min-width: 0; }
+.tile span { color: var(--soft); font-size: 13px; }
+.tile b { display: block; font: 300 34px/1.15 var(--num); letter-spacing: -.02em; margin-top: 4px; font-variant-numeric: tabular-nums; }
+.tile small { color: var(--faint); font-size: 12.5px; }
+.tile.bad b { color: var(--down); }
+section { margin-top: 34px; }
+h2 { font: 600 13px var(--sans); color: var(--soft); text-transform: uppercase; letter-spacing: .12em; margin: 0 0 10px 4px; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 20px; overflow: hidden; }
+.item { display: flex; align-items: center; gap: 12px; padding: 13px 18px; border-top: 1px solid var(--line); }
+.item:first-child { border-top: 0; }
+.item .t { flex: 1; min-width: 0; }
+.item .t small { display: block; color: var(--soft); font-size: 13px; }
+.item a.go { color: var(--soft); font-size: 13px; text-decoration: none; white-space: nowrap; }
+.item a.go:hover { color: var(--accent); }
+.ok { padding: 16px 18px; color: var(--soft); }
+.dot { width: 9px; height: 9px; border-radius: 50%; flex: none; background: var(--faint); display: inline-block; }
+.dot.up { background: var(--up); } .dot.down { background: var(--down); } .dot.run { background: var(--run); box-shadow: 0 0 0 3px color-mix(in srgb, var(--run) 22%, transparent); }
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+th { text-align: left; font: 500 12px var(--sans); color: var(--faint); padding: 12px 18px 8px; }
+td { padding: 12px 18px; border-top: 1px solid var(--line); vertical-align: top; }
+td.n { font-family: var(--num); font-variant-numeric: tabular-nums; color: var(--soft); white-space: nowrap; }
+td .rn { font-weight: 600; text-decoration: none; } td .rn:hover { color: var(--accent); }
+td .links { display: block; font-size: 12.5px; color: var(--faint); } td .links a { color: var(--soft); text-decoration: none; margin-right: 10px; } td .links a:hover { color: var(--accent); }
+.wf { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { display: inline-flex; align-items: center; gap: 7px; padding: 4px 10px; border-radius: 999px; background: var(--raised); border: 1px solid var(--line); font-size: 12.5px; text-decoration: none; white-space: nowrap; }
+.chip:hover { border-color: var(--accent); }
+.chip em { font-style: normal; color: var(--faint); font-family: var(--num); }
+.days { font-family: var(--num); font-variant-numeric: tabular-nums; }
+.warn { color: var(--down); }
+footer { margin-top: 44px; color: var(--faint); font-size: 13px; line-height: 1.6; }
+footer a { color: var(--soft); }
+@media (max-width: 760px) {
+  .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  table, tbody, tr, td { display: block; } thead { display: none; }
+  tr { border-top: 1px solid var(--line); padding: 10px 0; } td { border: 0; padding: 4px 18px; }
+}
+</style>
+</head>
+<body>
+<main>
+  <div class="top">
+    <a class="mark" href="https://ldiazbusquets.github.io/">LDB</a>
+    <nav><a href="https://ldiazbusquets.github.io/status/">Status</a><a href="https://github.com/ldiazbusquets">GitHub</a></nav>
+  </div>
+  <h1>Admin</h1>
+  <p class="sub" id="sub">Loading…</p>
+  <div class="tiles" id="tiles"></div>
+  <section><h2>Needs attention</h2><div class="card" id="attn"><div class="ok">Loading…</div></div></section>
+  <section><h2>Repos and workflows</h2><div class="card"><table><thead><tr><th>Repo</th><th>Latest run of each workflow</th><th>Last push</th></tr></thead><tbody id="repos"></tbody></table></div></section>
+  <section><h2>Keys and tokens</h2><div class="card" id="keys"></div></section>
+  <footer>
+    Workflow and repo data from the GitHub API, collected every 15 minutes by this repo's “Admin data” workflow; site and
+    feed health come from the <a href="https://ldiazbusquets.github.io/status/">status page</a>. Key expiry dates are
+    entered by hand in <a href="https://github.com/ldiazbusquets/admin/blob/main/keys.json">keys.json</a> (names and
+    dates only, never values). Long-running jobs (keeper, live flights, checks) show as running most of the time; that is normal.
+  </footer>
+</main>
+<script>
+(async () => {
+  const $ = (s) => document.querySelector(s);
+  const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const ago = (t) => { if (!t) return '—'; const m = Math.round((Date.now() - t) / 60000); if (m < 1) return 'just now'; if (m < 60) return m + ' min ago'; const h = Math.round(m / 60); if (h < 48) return h + ' h ago'; return Math.round(h / 24) + ' days ago'; };
+  const get = (u) => fetch(u + (u.includes('?') ? '&' : '?') + 't=' + Date.now(), { cache: 'no-store' }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+  const [ad, keys, st, sites] = await Promise.all([get('data/admin.json'), get('keys.json'), get('../status/data/status.json'), get('../status/sites.json')]);
+  const BAD = new Set(['failure', 'timed_out', 'startup_failure', 'action_required']);
+  const state = (w) => (w.status !== 'completed' ? 'run' : BAD.has(w.conclusion) ? 'down' : w.conclusion === 'success' ? 'up' : '');
+  const label = (w) => (w.status !== 'completed' ? (w.status === 'in_progress' ? 'running' : w.status) : (w.conclusion || '').replace(/_/g, ' '));
+  const repos = ad?.repos ?? [];
+  const allWf = repos.flatMap((r) => r.workflows.map((w) => ({ ...w, repo: r })));
+  const failing = allWf.filter((w) => state(w) === 'down');
+  const running = allWf.filter((w) => state(w) === 'run');
+  // a long-running job that hasn't run for 8 h has stopped handing over to its next run
+  const stalled = allWf.filter((w) => w.long && w.status === 'completed' && Date.now() - w.updated > 8 * 3600e3);
+  const siteName = Object.fromEntries((sites?.sites ?? []).map((s) => [s.id, s]));
+  const sitesDown = (st?.sites ?? []).filter((s) => !s.up), sitesTotal = st?.sites?.length ?? 0;
+  const feedsLate = (st?.data ?? []).filter((d) => !d.ok);
+  const dayLeft = (d) => (d ? Math.ceil((Date.parse(d + 'T00:00:00') - Date.now()) / 864e5) : null);
+  const keyList = keys?.keys ?? [], soon = keyList.filter((k) => { const n = dayLeft(k.expires); return n != null && n <= 21; });
+  const pages = allWf.filter((w) => w.name === 'pages-build-deployment').sort((a, b) => b.updated - a.updated)[0];
+
+  $('#sub').textContent = ad ? `Data collected ${ago(ad.at)} · ${repos.length} repos · ${allWf.length} workflows` : 'No data collected yet: the “Admin data” workflow writes it within 15 minutes of its first run.';
+  $('#tiles').innerHTML = [
+    ['Sites up', st ? `${sitesTotal - sitesDown.length}/${sitesTotal}` : '—', st ? 'checked ' + ago(st.checked) : 'status page unavailable', sitesDown.length],
+    ['Failing workflows', ad ? String(failing.length) : '—', ad ? `${repos.reduce((a, r) => a + r.fails24, 0)} failed runs in 24 h` : '', failing.length],
+    ['Running now', ad ? String(running.length) : '—', 'incl. long-running jobs', 0],
+    ['Last Pages deploy', pages ? ago(pages.updated) : '—', pages ? pages.repo.name : '', 0],
+  ].map(([l, v, s, bad]) => `<div class="tile${bad ? ' bad' : ''}"><span>${l}</span><b>${esc(v)}</b><small>${esc(s)}</small></div>`).join('');
+
+  const attn = [
+    ...sitesDown.map((s) => ({ t: `${siteName[s.id]?.name ?? s.id} is down`, s: `HTTP ${s.code || s.err || '—'} at the last check`, url: siteName[s.id]?.url, go: 'Open site' })),
+    ...feedsLate.map((d) => ({ t: `${(st.data && (sites?.data ?? []).find((x) => x.id === d.id)?.name) || d.id} is late`, s: d.at ? 'last updated ' + ago(d.at) : 'no timestamp', url: 'https://ldiazbusquets.github.io/status/', go: 'Status' })),
+    ...failing.map((w) => ({ t: `${w.repo.name}: ${w.name} ${label(w)}`, s: `${w.event} run, ${ago(w.updated)}`, url: w.url, go: 'Open run' })),
+    ...stalled.map((w) => ({ t: `${w.repo.name}: ${w.name} stopped`, s: `last ran ${ago(w.updated)}; it should hand over to a new run`, url: w.url, go: 'Open run' })),
+    ...soon.map((k) => { const n = dayLeft(k.expires); return { t: `${k.name} ${n < 0 ? 'expired' : 'expires in ' + n + ' day' + (n === 1 ? '' : 's')}`, s: `${k.what} · ${k.repo}`, url: `https://github.com/ldiazbusquets/${k.repo}/settings/secrets/actions`, go: 'Secrets' }; }),
+    ...repos.filter((r) => r.err).map((r) => ({ t: `${r.name}: couldn’t read the repo`, s: r.err, url: `https://github.com/ldiazbusquets/${r.repo}`, go: 'Repo' })),
+  ];
+  $('#attn').innerHTML = attn.length ? attn.map((a) => `<div class="item"><span class="dot down"></span><div class="t">${esc(a.t)}<small>${esc(a.s)}</small></div>${a.url ? `<a class="go" href="${esc(a.url)}">${a.go} ↗</a>` : ''}</div>`).join('')
+    : `<div class="ok"><span class="dot up"></span>&nbsp; Nothing needs attention${ad ? '' : ' (no workflow data yet)'}.</div>`;
+
+  $('#repos').innerHTML = repos.map((r) => `<tr><td><a class="rn" href="https://github.com/ldiazbusquets/${esc(r.repo)}">${esc(r.name)}</a><span class="links"><a href="https://github.com/ldiazbusquets/${esc(r.repo)}/actions">Actions</a>${r.site ? `<a href="${esc(r.site)}">Site</a>` : ''}${r.issues ? `<a href="https://github.com/ldiazbusquets/${esc(r.repo)}/issues">${r.issues} open</a>` : ''}</span></td>
+    <td><div class="wf">${r.workflows.length ? r.workflows.map((w) => `<a class="chip" href="${esc(w.url)}" title="${esc(label(w))} · ${esc(w.event)} · ${new Date(w.updated).toLocaleString()}"><span class="dot ${state(w)}"></span>${esc(w.name === 'pages-build-deployment' ? 'Pages deploy' : w.name)}<em>${ago(w.updated).replace(' ago', '')}</em></a>`).join('') : '<span style="color:var(--faint)">no workflow runs</span>'}</div></td>
+    <td class="n">${ago(r.pushed)}</td></tr>`).join('') || '<tr><td colspan="3" style="color:var(--faint)">No data yet.</td></tr>';
+
+  $('#keys').innerHTML = keyList.map((k) => { const n = dayLeft(k.expires);
+    const wf = allWf.find((w) => w.repo.repo === k.repo && w.name === k.workflow), ws = wf ? state(wf) : '';
+    return `<div class="item"><span class="dot ${ws}" title="${wf ? 'Latest ' + esc(k.workflow) + ' run: ' + esc(label(wf)) : ''}"></span><div class="t"><b style="font-weight:600">${esc(k.name)}</b><small>${esc(k.what)} · used by ${esc(k.repo)} (${esc(k.workflow)})${wf ? ' · last run ' + esc(label(wf)) + ' ' + ago(wf.updated) : ''}</small></div>
+      <span class="days ${n != null && n <= 21 ? 'warn' : ''}">${n == null ? '<span style="color:var(--faint)">no expiry date</span>' : n < 0 ? 'expired' : n + ' days left'}</span></div>`; }).join('');
+})();
+</script>
+</body>
+</html>

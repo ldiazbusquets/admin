@@ -109,7 +109,8 @@ footer a { color: var(--soft); }
   const feedsLate = (st?.data ?? []).filter((d) => !d.ok);
   const dayLeft = (d) => (d ? Math.ceil((Date.parse(d + 'T00:00:00') - Date.now()) / 864e5) : null);
   const keyList = keys?.keys ?? [], soon = keyList.filter((k) => { const n = dayLeft(k.expires); return n != null && n <= 21; });
-  const pages = allWf.filter((w) => w.name === 'pages-build-deployment').sort((a, b) => b.updated - a.updated)[0];
+  const isPages = (n) => /^pages[ -]build/.test(n);
+  const pages = allWf.filter((w) => isPages(w.name)).sort((a, b) => b.updated - a.updated)[0];
 
   $('#sub').textContent = ad ? `Data collected ${ago(ad.at)} · ${repos.length} repos · ${allWf.length} workflows` : 'No data collected yet: the “Admin data” workflow writes it within 15 minutes of its first run.';
   $('#tiles').innerHTML = [
@@ -131,7 +132,7 @@ footer a { color: var(--soft); }
     : `<div class="ok"><span class="dot up"></span>&nbsp; Nothing needs attention${ad ? '' : ' (no workflow data yet)'}.</div>`;
 
   $('#repos').innerHTML = repos.map((r) => `<tr><td><a class="rn" href="https://github.com/ldiazbusquets/${esc(r.repo)}">${esc(r.name)}</a><span class="links"><a href="https://github.com/ldiazbusquets/${esc(r.repo)}/actions">Actions</a>${r.site ? `<a href="${esc(r.site)}">Site</a>` : ''}${r.issues ? `<a href="https://github.com/ldiazbusquets/${esc(r.repo)}/issues">${r.issues} open</a>` : ''}</span></td>
-    <td><div class="wf">${r.workflows.length ? r.workflows.map((w) => `<a class="chip" href="${esc(w.url)}" title="${esc(label(w))} · ${esc(w.event)} · ${new Date(w.updated).toLocaleString()}"><span class="dot ${state(w)}"></span>${esc(w.name === 'pages-build-deployment' ? 'Pages deploy' : w.name)}<em>${ago(w.updated).replace(' ago', '')}</em></a>`).join('') : '<span style="color:var(--faint)">no workflow runs</span>'}</div></td>
+    <td><div class="wf">${r.workflows.length ? r.workflows.map((w) => `<a class="chip" href="${esc(w.url)}" title="${esc(label(w))} · ${esc(w.event)} · ${new Date(w.updated).toLocaleString()}"><span class="dot ${state(w)}"></span>${esc(isPages(w.name) ? 'Pages deploy' : w.name)}<em>${ago(w.updated).replace(' ago', '')}</em></a>`).join('') : '<span style="color:var(--faint)">no workflow runs</span>'}</div></td>
     <td class="n">${ago(r.pushed)}</td></tr>`).join('') || '<tr><td colspan="3" style="color:var(--faint)">No data yet.</td></tr>';
 
   $('#keys').innerHTML = keyList.map((k) => { const n = dayLeft(k.expires);

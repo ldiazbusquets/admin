@@ -60,6 +60,19 @@ td .links { display: block; font-size: 12.5px; color: var(--faint); } td .links 
 .chip em { font-style: normal; color: var(--faint); font-family: var(--num); }
 .days { font-family: var(--num); font-variant-numeric: tabular-nums; }
 .warn { color: var(--down); }
+.acts { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 14px 16px; }
+.pill { font: 500 13.5px var(--sans); color: var(--ink); background: var(--raised); border: 1px solid var(--line); border-radius: 999px; padding: 8px 15px; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 7px; }
+.pill:hover { border-color: var(--accent); } .pill:disabled { opacity: .5; cursor: default; }
+.pill.ghost { color: var(--soft); background: none; }
+.acts .msg { color: var(--soft); font-size: 13px; margin-left: 4px; }
+.conn { display: none; padding: 0 16px 16px; gap: 8px; flex-wrap: wrap; align-items: center; }
+.conn.open { display: flex; }
+.conn input { flex: 1 1 260px; min-width: 0; font: 400 14px var(--num); color: var(--ink); background: var(--raised); border: 1px solid var(--line); border-radius: 12px; padding: 9px 12px; }
+.conn p { flex-basis: 100%; margin: 4px 0 0; color: var(--faint); font-size: 12.5px; }
+.conn a { color: var(--soft); }
+.wfi { display: inline-flex; align-items: center; }
+.run { margin-left: -4px; width: 26px; height: 26px; border-radius: 50%; display: inline-grid; place-items: center; color: var(--soft); background: none; border: 0; cursor: pointer; font-size: 14px; text-decoration: none; }
+.run:hover { color: var(--accent); background: var(--raised); } .run.sent { color: var(--up); }
 footer { margin-top: 44px; color: var(--faint); font-size: 13px; line-height: 1.6; }
 footer a { color: var(--soft); }
 @media (max-width: 760px) {
@@ -78,6 +91,22 @@ footer a { color: var(--soft); }
   <h1>Admin</h1>
   <p class="sub" id="sub">Loading…</p>
   <div class="tiles" id="tiles"></div>
+  <section><h2>Actions</h2><div class="card">
+    <div class="acts" id="acts">
+      <button class="pill" data-run="parallax deploy.yml">↻ Refresh Parallax data</button>
+      <button class="pill" data-run="parallax keeper.yml">Restart Parallax keeper</button>
+      <button class="pill" data-run="parallax flights.yml">Restart live flights</button>
+      <button class="pill ghost" id="connbtn"></button>
+      <span class="msg" id="actmsg"></span>
+    </div>
+    <div class="conn" id="conn">
+      <input id="tok" type="password" autocomplete="off" spellcheck="false" placeholder="Paste a GitHub token (github_pat_…)">
+      <button class="pill" id="savetok">Save</button>
+      <p>Saved only in this browser, never sent anywhere but api.github.com. Use a fine-grained token with access to your repos and the single permission
+        <b>Actions: Read and write</b>, so it can start workflows and nothing else:
+        <a id="mktok" href="#">create one on GitHub ↗</a>. Without a token, the buttons open the workflow on GitHub, where you press “Run workflow”.</p>
+    </div>
+  </div></section>
   <section><h2>Needs attention</h2><div class="card" id="attn"><div class="ok">Loading…</div></div></section>
   <section><h2>Repos and workflows</h2><div class="card"><table><thead><tr><th>Repo</th><th>Latest run of each workflow</th><th>Last push</th></tr></thead><tbody id="repos"></tbody></table></div></section>
   <section><h2>Keys and tokens</h2><div class="card" id="keys"></div></section>
@@ -132,13 +161,43 @@ footer a { color: var(--soft); }
     : `<div class="ok"><span class="dot up"></span>&nbsp; Nothing needs attention${ad ? '' : ' (no workflow data yet)'}.</div>`;
 
   $('#repos').innerHTML = repos.map((r) => `<tr><td><a class="rn" href="https://github.com/ldiazbusquets/${esc(r.repo)}">${esc(r.name)}</a><span class="links"><a href="https://github.com/ldiazbusquets/${esc(r.repo)}/actions">Actions</a>${r.site ? `<a href="${esc(r.site)}">Site</a>` : ''}${r.issues ? `<a href="https://github.com/ldiazbusquets/${esc(r.repo)}/issues">${r.issues} open</a>` : ''}</span></td>
-    <td><div class="wf">${r.workflows.length ? r.workflows.map((w) => `<a class="chip" href="${esc(w.url)}" title="${esc(label(w))} · ${esc(w.event)} · ${new Date(w.updated).toLocaleString()}"><span class="dot ${state(w)}"></span>${esc(isPages(w.name) ? 'Pages deploy' : w.name)}<em>${ago(w.updated).replace(' ago', '')}</em></a>`).join('') : '<span style="color:var(--faint)">no workflow runs</span>'}</div></td>
+    <td><div class="wf">${r.workflows.length ? r.workflows.map((w) => `<a class="chip" href="${esc(w.url)}" title="${esc(label(w))} · ${esc(w.event)} · ${new Date(w.updated).toLocaleString()}"><span class="dot ${state(w)}"></span>${esc(isPages(w.name) ? 'Pages deploy' : w.name)}<em>${ago(w.updated).replace(' ago', '')}</em></a>${w.dispatch ? `<button class="run" title="Run ${esc(w.name)} now" data-run="${esc(r.repo)} ${esc(w.file)}">↻</button>` : ''}`).map((h) => `<span class="wfi">${h}</span>`).join('') : '<span style="color:var(--faint)">no workflow runs</span>'}</div></td>
     <td class="n">${ago(r.pushed)}</td></tr>`).join('') || '<tr><td colspan="3" style="color:var(--faint)">No data yet.</td></tr>';
 
   $('#keys').innerHTML = keyList.map((k) => { const n = dayLeft(k.expires);
     const wf = allWf.find((w) => w.repo.repo === k.repo && w.name === k.workflow), ws = wf ? state(wf) : '';
     return `<div class="item"><span class="dot ${ws}" title="${wf ? 'Latest ' + esc(k.workflow) + ' run: ' + esc(label(wf)) : ''}"></span><div class="t"><b style="font-weight:600">${esc(k.name)}</b><small>${esc(k.what)} · used by ${esc(k.repo)} (${esc(k.workflow)})${wf ? ' · last run ' + esc(label(wf)) + ' ' + ago(wf.updated) : ''}</small></div>
       <span class="days ${n != null && n <= 21 ? 'warn' : ''}">${n == null ? '<span style="color:var(--faint)">no expiry date</span>' : n < 0 ? 'expired' : n + ' days left'}</span></div>`; }).join('');
+
+  // ---- starting workflows: workflow_dispatch with a token kept in this browser only
+  const OWNER = 'ldiazbusquets', KEY = 'ldb.admin.ghtoken';
+  const tokGet = () => { try { return localStorage.getItem(KEY) || ''; } catch { return ''; } };
+  const tokSet = (v) => { try { v ? localStorage.setItem(KEY, v) : localStorage.removeItem(KEY); } catch { /* storage blocked */ } };
+  const branch = (repo) => repos.find((r) => r.repo === repo)?.branch || 'main';
+  const msg = (t) => { $('#actmsg').textContent = t; };
+  const paintConn = () => { $('#connbtn').textContent = tokGet() ? 'Connected to GitHub · disconnect' : 'Connect GitHub to run from here'; };
+  $('#mktok').href = 'https://github.com/settings/personal-access-tokens/new?' + new URLSearchParams({ name: 'LDB Admin', description: 'Start workflows from ldiazbusquets.github.io/admin', target_name: OWNER, expires_in: '90', actions: 'write' });
+  $('#connbtn').onclick = () => { if (tokGet()) { tokSet(''); paintConn(); msg('Token removed from this browser.'); } else $('#conn').classList.toggle('open'); };
+  $('#savetok').onclick = async () => {
+    const v = $('#tok').value.trim(); if (!v) return;
+    const r = await fetch('https://api.github.com/user', { headers: { Authorization: 'Bearer ' + v } }).catch(() => null);
+    if (!r || !r.ok) { msg('That token didn’t work (GitHub said ' + (r ? r.status : 'nothing') + ').'); return; }
+    tokSet(v); $('#tok').value = ''; $('#conn').classList.remove('open'); paintConn(); msg('Connected. The buttons now start workflows directly.');
+  };
+  paintConn();
+  document.addEventListener('click', async (e) => {
+    const b = e.target.closest('[data-run]'); if (!b) return;
+    const [repo, file] = b.dataset.run.split(' '), tok = tokGet();
+    if (!tok) { open(`https://github.com/${OWNER}/${repo}/actions/workflows/${file}`, '_blank', 'noopener'); return; }
+    b.disabled = true;
+    const r = await fetch(`https://api.github.com/repos/${OWNER}/${repo}/actions/workflows/${file}/dispatches`, { method: 'POST', headers: { Authorization: 'Bearer ' + tok, Accept: 'application/vnd.github+json' }, body: JSON.stringify({ ref: branch(repo) }) }).catch(() => null);
+    b.disabled = false;
+    const label = b.classList.contains('run') ? `${repo} · ${file}` : b.textContent.replace('↻', '').trim();
+    if (r && r.status === 204) { b.classList.add('sent'); msg(`Started: ${label}. It shows up in its repo’s Actions within a few seconds.`); setTimeout(() => b.classList.remove('sent'), 4000); }
+    else if (r && r.status === 401) { msg('GitHub rejected the token (expired or revoked). Connect again.'); tokSet(''); paintConn(); }
+    else if (r && (r.status === 403 || r.status === 404)) msg(`The token can’t run workflows in ${repo}: give it Actions read and write on that repo.`);
+    else msg(`Couldn’t start ${label} (${r ? r.status : 'network error'}).`);
+  });
 })();
 </script>
 </body>

@@ -13,6 +13,14 @@ for (const c of cfg.repos) {
   try {
     const info = await api(`/repos/${cfg.owner}/${c.repo}`);
     o.pushed = Date.parse(info.pushed_at); o.issues = info.open_issues_count; o.branch = info.default_branch;
+    // Which workflows can be started by hand (their file has a workflow_dispatch trigger): the admin page's Run buttons.
+    const defs = (await api(`/repos/${cfg.owner}/${c.repo}/actions/workflows`)).workflows ?? [];
+    const files = {};
+    for (const d of defs) {
+      if (!d.path.startsWith('.github/workflows/') || d.state !== 'active') continue;
+      const src = await fetch(`https://raw.githubusercontent.com/${cfg.owner}/${c.repo}/${info.default_branch}/${d.path}`).then((r) => (r.ok ? r.text() : '')).catch(() => '');
+      files[d.name] = { file: d.path.split('/').pop(), dispatch: /\bworkflow_dispatch\b/.test(src) };
+    }
     const runs = (await api(`/repos/${cfg.owner}/${c.repo}/actions/runs?per_page=60`)).workflow_runs ?? [];
     const seen = new Set();
     for (const r of runs) {
@@ -20,7 +28,7 @@ for (const c of cfg.repos) {
       if (cfg.ignore.includes(name)) continue;
       if (r.conclusion === 'failure' && now - Date.parse(r.updated_at) < DAY) o.fails24++;
       if (seen.has(name)) continue; seen.add(name);
-      o.workflows.push({ name, status: r.status, conclusion: r.conclusion, event: r.event, started: Date.parse(r.run_started_at || r.created_at), updated: Date.parse(r.updated_at), url: r.html_url, long: cfg.longRunning.includes(name) });
+      o.workflows.push({ name, status: r.status, conclusion: r.conclusion, event: r.event, started: Date.parse(r.run_started_at || r.created_at), updated: Date.parse(r.updated_at), url: r.html_url, long: cfg.longRunning.includes(name), ...(files[name] ?? {}) });
     }
   } catch (e) { o.err = String(e.message || e); }
   repos.push(o);

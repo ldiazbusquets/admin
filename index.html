@@ -71,11 +71,17 @@ td .links { display: block; font-size: 12.5px; color: var(--faint); } td .links 
 .conn p { flex-basis: 100%; margin: 4px 0 0; color: var(--faint); font-size: 12.5px; }
 .conn a { color: var(--soft); }
 .wfi { display: inline-flex; align-items: center; }
-.run { margin-left: -4px; width: 26px; height: 26px; border-radius: 50%; display: inline-grid; place-items: center; color: var(--soft); background: none; border: 0; cursor: pointer; font-size: 14px; text-decoration: none; }
-.run:hover { color: var(--accent); background: var(--raised); } .run.sent { color: var(--up); }
+.rerun { margin-left: -4px; width: 26px; height: 26px; border-radius: 50%; display: inline-grid; place-items: center; color: var(--soft); background: none; border: 0; cursor: pointer; font-size: 14px; text-decoration: none; }
+.rerun:hover { color: var(--accent); background: var(--raised); } .rerun.sent, .pill.sent { color: var(--up); }
+.item .act { font: 500 12.5px var(--sans); padding: 6px 12px; }
+.dot.wait { background: var(--run); }
+.acts .msg a { color: var(--accent); }
+.pill small { color: var(--faint); font-size: 12px; }
 footer { margin-top: 44px; color: var(--faint); font-size: 13px; line-height: 1.6; }
 footer a { color: var(--soft); }
+td .pl { display: none; }
 @media (max-width: 760px) {
+  td .pl { display: inline; }
   .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   table, tbody, tr, td { display: block; } thead { display: none; }
   tr { border-top: 1px solid var(--line); padding: 10px 0; } td { border: 0; padding: 4px 18px; }
@@ -139,35 +145,41 @@ footer a { color: var(--soft); }
   const dayLeft = (d) => (d ? Math.ceil((Date.parse(d + 'T00:00:00') - Date.now()) / 864e5) : null);
   const keyList = keys?.keys ?? [], soon = keyList.filter((k) => { const n = dayLeft(k.expires); return n != null && n <= 21; });
   const isPages = (n) => /^pages[ -]build/.test(n);
-  const pages = allWf.filter((w) => isPages(w.name)).sort((a, b) => b.updated - a.updated)[0];
 
+  const pxFeed = (st?.data ?? []).find((d) => d.id === 'px-markets'), pxDeploy = allWf.find((w) => w.repo.repo === 'parallax' && w.file === 'deploy.yml');
   $('#sub').textContent = ad ? `Data collected ${ago(ad.at)} · ${repos.length} repos · ${allWf.length} workflows` : 'No data collected yet: the “Admin data” workflow writes it within 15 minutes of its first run.';
   $('#tiles').innerHTML = [
     ['Sites up', st ? `${sitesTotal - sitesDown.length}/${sitesTotal}` : '—', st ? 'checked ' + ago(st.checked) : 'status page unavailable', sitesDown.length],
     ['Failing workflows', ad ? String(failing.length) : '—', ad ? `${repos.reduce((a, r) => a + r.fails24, 0)} failed runs in 24 h` : '', failing.length],
     ['Running now', ad ? String(running.length) : '—', 'incl. long-running jobs', 0],
-    ['Last Pages deploy', pages ? ago(pages.updated) : '—', pages ? pages.repo.name : '', 0],
+    ['Parallax data', pxFeed?.at ? ago(pxFeed.at).replace(' ago', '') + ' old' : '—', pxDeploy?.status && pxDeploy.status !== 'completed' ? 'updating now' : pxDeploy ? 'last update ' + label(pxDeploy) : '', pxFeed && !pxFeed.ok && !(pxDeploy && pxDeploy.status !== 'completed')],
   ].map(([l, v, s, bad]) => `<div class="tile${bad ? ' bad' : ''}"><span>${l}</span><b>${esc(v)}</b><small>${esc(s)}</small></div>`).join('');
 
+  const wfOf = (repo, file) => allWf.find((w) => w.repo.repo === repo && w.file === file);
+  const busy = (repo, file) => { const w = wfOf(repo, file); return w && w.status !== 'completed' ? w : null; };
+  const FEED_FIX = { 'px-markets': ['parallax', 'deploy.yml'], 'px-flights': ['parallax', 'flights.yml'] };
   const attn = [
     ...sitesDown.map((s) => ({ t: `${siteName[s.id]?.name ?? s.id} is down`, s: `HTTP ${s.code || s.err || '—'} at the last check`, url: siteName[s.id]?.url, go: 'Open site' })),
-    ...feedsLate.map((d) => ({ t: `${(st.data && (sites?.data ?? []).find((x) => x.id === d.id)?.name) || d.id} is late`, s: d.at ? 'last updated ' + ago(d.at) : 'no timestamp', url: 'https://ldiazbusquets.github.io/status/', go: 'Status' })),
-    ...failing.map((w) => ({ t: `${w.repo.name}: ${w.name} ${label(w)}`, s: `${w.event} run, ${ago(w.updated)}`, url: w.url, go: 'Open run' })),
-    ...stalled.map((w) => ({ t: `${w.repo.name}: ${w.name} stopped`, s: `last ran ${ago(w.updated)}; it should hand over to a new run`, url: w.url, go: 'Open run' })),
+    ...feedsLate.map((d) => ({ fix: FEED_FIX[d.id], t: `${(st.data && (sites?.data ?? []).find((x) => x.id === d.id)?.name) || d.id} is late`, s: d.at ? 'last updated ' + ago(d.at) : 'no timestamp', url: 'https://ldiazbusquets.github.io/status/', go: 'Status' })),
+    ...failing.map((w) => ({ fix: w.dispatch ? [w.repo.repo, w.file] : null, fixLabel: 'Re-run', t: `${w.repo.name}: ${w.name} ${label(w)}`, s: `${w.event} run, ${ago(w.updated)}`, url: w.url, go: 'Open run' })),
+    ...stalled.map((w) => ({ fix: w.dispatch ? [w.repo.repo, w.file] : null, fixLabel: 'Restart', t: `${w.repo.name}: ${w.name} stopped`, s: `last ran ${ago(w.updated)}; it should hand over to a new run`, url: w.url, go: 'Open run' })),
     ...soon.map((k) => { const n = dayLeft(k.expires); return { t: `${k.name} ${n < 0 ? 'expired' : 'expires in ' + n + ' day' + (n === 1 ? '' : 's')}`, s: `${k.what} · ${k.repo}`, url: `https://github.com/ldiazbusquets/${k.repo}/settings/secrets/actions`, go: 'Secrets' }; }),
     ...repos.filter((r) => r.err).map((r) => ({ t: `${r.name}: couldn’t read the repo`, s: r.err, url: `https://github.com/ldiazbusquets/${r.repo}`, go: 'Repo' })),
   ];
-  $('#attn').innerHTML = attn.length ? attn.map((a) => `<div class="item"><span class="dot down"></span><div class="t">${esc(a.t)}<small>${esc(a.s)}</small></div>${a.url ? `<a class="go" href="${esc(a.url)}">${a.go} ↗</a>` : ''}</div>`).join('')
+  $('#attn').innerHTML = attn.length ? attn.map((a) => { const b = a.fix && busy(...a.fix);
+      return `<div class="item"><span class="dot ${b ? 'wait' : 'down'}"></span><div class="t">${esc(a.t)}<small>${esc(a.s)}${b ? ` · ${esc(b.name)} is running now (started ${ago(b.started)})` : ''}</small></div>${a.fix && !b ? `<button class="pill act" data-run="${esc(a.fix.join(' '))}">${a.fixLabel || 'Update now'}</button>` : ''}${a.url ? `<a class="go" href="${esc(a.url)}">${a.go} ↗</a>` : ''}</div>`; }).join('')
     : `<div class="ok"><span class="dot up"></span>&nbsp; Nothing needs attention${ad ? '' : ' (no workflow data yet)'}.</div>`;
 
   $('#repos').innerHTML = repos.map((r) => `<tr><td><a class="rn" href="https://github.com/ldiazbusquets/${esc(r.repo)}">${esc(r.name)}</a><span class="links"><a href="https://github.com/ldiazbusquets/${esc(r.repo)}/actions">Actions</a>${r.site ? `<a href="${esc(r.site)}">Site</a>` : ''}${r.issues ? `<a href="https://github.com/ldiazbusquets/${esc(r.repo)}/issues">${r.issues} open</a>` : ''}</span></td>
-    <td><div class="wf">${r.workflows.length ? r.workflows.map((w) => `<a class="chip" href="${esc(w.url)}" title="${esc(label(w))} · ${esc(w.event)} · ${new Date(w.updated).toLocaleString()}"><span class="dot ${state(w)}"></span>${esc(isPages(w.name) ? 'Pages deploy' : w.name)}<em>${ago(w.updated).replace(' ago', '')}</em></a>${w.dispatch ? `<button class="run" title="Run ${esc(w.name)} now" data-run="${esc(r.repo)} ${esc(w.file)}">↻</button>` : ''}`).map((h) => `<span class="wfi">${h}</span>`).join('') : '<span style="color:var(--faint)">no workflow runs</span>'}</div></td>
-    <td class="n">${ago(r.pushed)}</td></tr>`).join('') || '<tr><td colspan="3" style="color:var(--faint)">No data yet.</td></tr>';
+    <td><div class="wf">${r.workflows.length ? r.workflows.map((w) => `<a class="chip" href="${esc(w.url)}" title="${esc(label(w))} · ${esc(w.event)} · ${new Date(w.updated).toLocaleString()}"><span class="dot ${state(w)}"></span>${esc(isPages(w.name) ? 'Pages deploy' : w.name)}<em>${ago(w.updated).replace(' ago', '')}</em></a>${w.dispatch ? `<button class="rerun" title="Run ${esc(w.name)} now" data-run="${esc(r.repo)} ${esc(w.file)}">↻</button>` : ''}`).map((h) => `<span class="wfi">${h}</span>`).join('') : '<span style="color:var(--faint)">no workflow runs</span>'}</div></td>
+    <td class="n"><span class="pl">pushed </span>${ago(r.pushed)}</td></tr>`).join('') || '<tr><td colspan="3" style="color:var(--faint)">No data yet.</td></tr>';
 
   $('#keys').innerHTML = keyList.map((k) => { const n = dayLeft(k.expires);
     const wf = allWf.find((w) => w.repo.repo === k.repo && w.name === k.workflow), ws = wf ? state(wf) : '';
     return `<div class="item"><span class="dot ${ws}" title="${wf ? 'Latest ' + esc(k.workflow) + ' run: ' + esc(label(wf)) : ''}"></span><div class="t"><b style="font-weight:600">${esc(k.name)}</b><small>${esc(k.what)} · used by ${esc(k.repo)} (${esc(k.workflow)})${wf ? ' · last run ' + esc(label(wf)) + ' ' + ago(wf.updated) : ''}</small></div>
-      <span class="days ${n != null && n <= 21 ? 'warn' : ''}">${n == null ? '<span style="color:var(--faint)">no expiry date</span>' : n < 0 ? 'expired' : n + ' days left'}</span></div>`; }).join('');
+      <span class="days ${n != null && n <= 21 ? 'warn' : ''}">${n == null ? `<a class="go" href="https://github.com/ldiazbusquets/admin/edit/main/keys.json" title="Add its expiry date in keys.json">add expiry</a>` : n < 0 ? 'expired' : n + ' days left'}</span></div>`; }).join('');
+
+  document.querySelectorAll('#acts [data-run]').forEach((el) => { const w = busy(...el.dataset.run.split(' ')); if (w) el.insertAdjacentHTML('beforeend', ` <small>running · ${ago(w.started).replace(' ago', '')}</small>`); });
 
   // ---- starting workflows: workflow_dispatch with a token kept in this browser only
   const OWNER = 'ldiazbusquets', KEY = 'ldb.admin.ghtoken';
@@ -188,16 +200,24 @@ footer a { color: var(--soft); }
   document.addEventListener('click', async (e) => {
     const b = e.target.closest('[data-run]'); if (!b) return;
     const [repo, file] = b.dataset.run.split(' '), tok = tokGet();
-    if (!tok) { open(`https://github.com/${OWNER}/${repo}/actions/workflows/${file}`, '_blank', 'noopener'); return; }
+    if (!tok) { msg('Opening it on GitHub: press “Run workflow” there. Connect GitHub to skip this step.'); open(`https://github.com/${OWNER}/${repo}/actions/workflows/${file}`, '_blank', 'noopener'); return; }
     b.disabled = true;
     const r = await fetch(`https://api.github.com/repos/${OWNER}/${repo}/actions/workflows/${file}/dispatches`, { method: 'POST', headers: { Authorization: 'Bearer ' + tok, Accept: 'application/vnd.github+json' }, body: JSON.stringify({ ref: branch(repo) }) }).catch(() => null);
     b.disabled = false;
-    const label = b.classList.contains('run') ? `${repo} · ${file}` : b.textContent.replace('↻', '').trim();
-    if (r && r.status === 204) { b.classList.add('sent'); msg(`Started: ${label}. It shows up in its repo’s Actions within a few seconds.`); setTimeout(() => b.classList.remove('sent'), 4000); }
+    const label = b.classList.contains('rerun') ? `${repo} · ${file}` : b.textContent.replace('↻', '').trim();
+    if (r && r.status === 204) {
+      b.classList.add('sent'); msg(`Started: ${label}.`); setTimeout(() => b.classList.remove('sent'), 4000);
+      // find the run it created so the message can link to it
+      setTimeout(async () => { const j = await fetch(`https://api.github.com/repos/${OWNER}/${repo}/actions/workflows/${file}/runs?per_page=1&event=workflow_dispatch`, { headers: { Authorization: 'Bearer ' + tok } }).then((x) => x.json()).catch(() => null);
+        const run = j?.workflow_runs?.[0]; if (run && Date.now() - Date.parse(run.created_at) < 120e3) $('#actmsg').innerHTML = `Started: ${esc(label)} · <a href="${esc(run.html_url)}" target="_blank" rel="noopener">watch it run ↗</a>`; }, 4000);
+    }
     else if (r && r.status === 401) { msg('GitHub rejected the token (expired or revoked). Connect again.'); tokSet(''); paintConn(); }
     else if (r && (r.status === 403 || r.status === 404)) msg(`The token can’t run workflows in ${repo}: give it Actions read and write on that repo.`);
     else msg(`Couldn’t start ${label} (${r ? r.status : 'network error'}).`);
   });
+
+  // fresh data every 5 minutes while the page is on screen (not while the token box is open)
+  setInterval(() => { if (document.visibilityState === 'visible' && !$('#conn').classList.contains('open') && document.activeElement?.tagName !== 'INPUT') location.reload(); }, 300e3);
 })();
 </script>
 </body>
